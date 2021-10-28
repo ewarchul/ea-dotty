@@ -190,6 +190,24 @@ class Evolution:
             self.save(plt, 'methodPerformance')
         else:
             plt.show()
+
+    def plot_estimator_performance(self, save=False):
+        x = np.array(range(len(self.H)))
+        y_central = list(map(lambda P: self.calculate(self.getCentralPoint(P)), self.H))
+        y_best = list(map(lambda P: self.calculate(self.getBestPoint(P)), self.H))
+        y_estimator = list(map(lambda P: self.calculate(self.estimate(self.getSequence(P))), self.H))
+        
+        plt.grid(axis='x', color='0.90')
+        plt.scatter(x, y_central, color='green', label='Central point')
+        plt.scatter(x, y_best, color='blue', label='Best point')
+        plt.scatter(x, y_estimator, marker='x', color='red', label='Estimator point')
+        plt.xlabel('Population index')
+        plt.ylabel('Point value')
+        plt.legend()
+        if save is True:
+            self.save(plt, 'estimatorPerformance')
+        else:
+            plt.show()
             
     def save(self):
         np.save(f"out/evolution-dim={self.D}-mu={self.N}-generations={self.max_generations}.npy", self.H,

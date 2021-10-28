@@ -39,3 +39,5 @@ for D in dimensions:
             evolution = Evolution(params)
             evolution.init_population()
             evolution.plot_method_performance(evolution.H[0], save=True)
+            evolution.evaluate()
+            evolution.plot_estimator_performance(save=True)

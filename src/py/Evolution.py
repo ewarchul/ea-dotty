@@ -204,6 +204,7 @@ class Evolution:
         plt.xlabel('Population index')
         plt.ylabel('Point value')
         plt.legend()
+        plt.title('Key points comparison across population history')
         if save is True:
             self.save(plt, 'estimatorPerformance')
         else:

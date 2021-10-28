@@ -148,8 +148,6 @@ class Evolution:
         cmap = plt.cm.Greens
         color = cmap(index)
         df = pd.DataFrame({
-            'x': centroidSequence[:, 0],
-            'y': centroidSequence[:, 1],
             'value': map(self.calculate, centroidSequence),
             'dist_from_opt': map(lambda point: np.linalg.norm(point - self.global_optimum), centroidSequence)
         })

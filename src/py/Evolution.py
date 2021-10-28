@@ -1,6 +1,7 @@
 from typing import Dict
 import numpy as np
 from tqdm import tqdm
+from pathlib import Path
 import pandas as pd
 from sklearn import decomposition
 from matplotlib import pyplot as plt
@@ -102,10 +103,6 @@ class Evolution:
                 bar.update(1)
         return self.H
 
-    def save(self):
-        np.save(f"out/evolution-dim={self.D}-mu={self.N}-generations={self.max_generations}.npy", self.H,
-                fix_imports=False)
-
     def getSequence(self, population):
         tmpPopulation = sorted(population.copy(), key=lambda point: self.calculate(point))
         centroidSequence = []
@@ -114,7 +111,7 @@ class Evolution:
             del tmpPopulation[-1]
         return np.array(centroidSequence)
 
-    def plot_distribution(self, population):
+    def plot_distribution(self, population, save=False):
         if self.D > 2:
             pca = decomposition.PCA(n_components=2)
             mapping = pca.fit_transform(population)
@@ -127,9 +124,12 @@ class Evolution:
         plt.title("Population distribution")
         plt.xlabel("x")
         plt.ylabel("y")
-        plt.show()
+        if save is True:
+            self.save(plt)
+        else:
+            plt.show()
 
-    def plot_centroid_sequence(self, population):
+    def plot_centroid_sequence(self, population, save=False):
         centroidSequence = self.getSequence(population)
         index = np.linspace(0, 1, self.N)
         cmap = plt.cm.Greens
@@ -148,9 +148,12 @@ class Evolution:
         plt.ylabel("latent y")
         norm = mpl.colors.Normalize(vmin=0, vmax=self.N)
         plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), label='sequence index')
-        plt.show()
+        if save is True:
+            self.save(plt)
+        else:
+            plt.show()
 
-    def plot_method_performance(self, population):
+    def plot_method_performance(self, population, save=False):
         centroidSequence = self.getSequence(population)
         index = np.linspace(0, 1, self.N)
         cmap = plt.cm.Greens
@@ -180,4 +183,18 @@ class Evolution:
                     label='estimator')
         plt.legend(handles=[vc, ve, dc, de],
                    labels=['centroid value', 'estimator value', 'centroid dist_from_opt', 'estimator dist_from_opt'])
-        plt.show()
+        if save is True:
+            self.save(plt)
+        else:
+            plt.show()
+
+    def save(self):
+        np.save(f"out/evolution-dim={self.D}-mu={self.N}-generations={self.max_generations}.npy", self.H,
+                fix_imports=False)
+
+    def save(self, plot):
+        filepath = f"out/{self.fitness_func.__name__}-{self.estimation_func.__name__}/N({self.initial_mean},{int(self.initial_variance)})/Nx{int(self.N / self.D)}_D{self.D}.jpg"
+        folderpath = "/".join(filepath.split("/")[:-1])
+        Path(folderpath).mkdir(parents=True, exist_ok=True)
+        plot.savefig(filepath, dpi=300, bbox_inches='tight')
+        plot.close()

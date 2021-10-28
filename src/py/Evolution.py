@@ -70,6 +70,9 @@ class Evolution:
     def getCentralPoint(population):
         return np.mean(population, axis=0)
 
+    def getBestPoint(self, population):
+        return population[np.argmax(np.array(list(map(lambda point: self.calculate(point), population))))]
+
     def init_population(self):
         size = (self.N, self.D)
         self.H = np.empty(0)

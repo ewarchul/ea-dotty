@@ -17,7 +17,6 @@ class Evolution:
                           'stop_func': StopConditions.count_generations,
                           'max_generations': 15,
                           'fitness_func': FitnessFunctions.quadratic,
-                          'global_optimum': 0,
                           'select_func': Selects.threshold,
                           'theta': 0.2,
                           'mutation_func': Mutations.gaussian,
@@ -35,7 +34,6 @@ class Evolution:
         self.stop_func = None
         self.max_generations = None
         self.fitness_func = None
-        self.global_optimum = None
         self.select_func = None
         self.theta = None
         self.mutation_func = None
@@ -47,6 +45,7 @@ class Evolution:
         self.tell(Evolution.parameter_defaults)
         self.tell(params)
 
+        self.global_optimum = FitnessFunctions.getGlobalOptimum(self.fitness_func, self.D)
         self.t = 0
         self.H = np.empty(0)
         self.population = None
@@ -92,6 +91,8 @@ class Evolution:
     def tell(self, params: Dict[str, any]):
         for key, value in params.items():
             setattr(self, key, value)
+        if 'fitness_func' in params.keys():
+            self.global_optimum = FitnessFunctions.getGlobalOptimum(params['fitness_func'], self.D)
 
     def evaluate(self):
         self.t = 0

@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 import matplotlib.lines as mlines
 from sklearn.linear_model import LinearRegression
-from utils import StopConditions, FitnessFunctions, Selects, Mutations
+from utils import StopConditions, FitnessFunctions, Selects, Mutations, Estimators
 
 
 class Evolution:
@@ -23,6 +23,8 @@ class Evolution:
                           'mutation_func': Mutations.gaussian,
                           'initial_mean': 10.,
                           'initial_variance': 2.,
+                          'estimation_func': Estimators.linear,
+                          'predict': 1.0,
                           }
     parameter_names = set(parameter_defaults.keys())
 
@@ -39,6 +41,8 @@ class Evolution:
         self.mutation_func = None
         self.initial_mean = None
         self.initial_variance = None
+        self.estimation_func = None
+        self.predict = None
 
         self.tell(Evolution.parameter_defaults)
         self.tell(params)
@@ -58,6 +62,9 @@ class Evolution:
 
     def mutation(self, point):
         return self.mutation_func(self, point)
+
+    def estimate(self, sequence):
+        return self.estimation_func(self, sequence, self.predict)
 
     @staticmethod
     def getCentralPoint(population):
@@ -151,12 +158,7 @@ class Evolution:
             'value': map(self.calculate, centroidSequence),
             'dist_from_opt': map(lambda point: np.linalg.norm(point - self.global_optimum), centroidSequence)
         })
-        samples = index.reshape(-1, 1)
-        estimator_point = []
-        for i in range(self.D):
-            targets = centroidSequence[:, i].copy().reshape(-1, 1)
-            regression_model = LinearRegression().fit(samples, targets)
-            estimator_point.append(regression_model.predict([[1]])[0][0])
+        estimator_point = self.estimate(centroidSequence)
 
         fig, ax1 = plt.subplots()
         ax2 = ax1.twinx()

@@ -128,7 +128,7 @@ class Evolution:
         plt.xlabel("x")
         plt.ylabel("y")
         if save is True:
-            self.save(plt)
+            self.save(plt, 'distribution')
         else:
             plt.show()
 
@@ -152,7 +152,7 @@ class Evolution:
         norm = mpl.colors.Normalize(vmin=0, vmax=self.N)
         plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), label='sequence index')
         if save is True:
-            self.save(plt)
+            self.save(plt, 'centroidSequence')
         else:
             plt.show()
 
@@ -187,16 +187,16 @@ class Evolution:
         plt.legend(handles=[vc, ve, dc, de],
                    labels=['centroid value', 'estimator value', 'centroid dist_from_opt', 'estimator dist_from_opt'])
         if save is True:
-            self.save(plt)
+            self.save(plt, 'methodPerformance')
         else:
             plt.show()
-
+            
     def save(self):
         np.save(f"out/evolution-dim={self.D}-mu={self.N}-generations={self.max_generations}.npy", self.H,
                 fix_imports=False)
 
-    def save(self, plot):
-        filepath = f"out/{self.fitness_func.__name__}-{self.estimation_func.__name__}/N({self.initial_mean},{int(self.initial_variance)})/Nx{int(self.N / self.D)}_D{self.D}.jpg"
+    def save(self, plot, plot_type=None):
+        filepath = f"out/{self.fitness_func.__name__}-{self.estimation_func.__name__}/N({self.initial_mean},{int(self.initial_variance)}){'/' + plot_type if plot_type is not None else ''}/Nx{int(self.N / self.D)}_D{self.D}.jpg"
         folderpath = "/".join(filepath.split("/")[:-1])
         Path(folderpath).mkdir(parents=True, exist_ok=True)
         plot.savefig(filepath, dpi=300, bbox_inches='tight')

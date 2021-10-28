@@ -1,3 +1,4 @@
+import math
 import functools
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -17,6 +18,33 @@ class FitnessFunctions:
     @staticmethod
     def quadratic(evolution, point):
         return functools.reduce(lambda ret, atr: ret + atr * atr, point, 0) / evolution.D
+    
+    @staticmethod
+    def eliptic(evolution, point, param = 4):
+        val = 0
+        for i, atr in enumerate(point):
+            val += pow(param, i / (evolution.D - 1)) * atr * atr
+        return val
+    
+    @staticmethod
+    def triangular(evolution, point):
+        return functools.reduce(lambda ret, atr: ret + (atr if atr > 0 else -atr/2), point, 0) / evolution.D
+    
+    @staticmethod
+    def rosenbrock(evolution, point):
+        val = 0
+        for i in range(1, int(evolution.D / 2)):
+            tmp1 = point[2 * i - 2] * point[2 * i - 2] - point[2 * i - 1]
+            tmp2 = point[2 * i - 2] - 1
+            val += 100 * tmp1 * tmp1 + tmp2 * tmp2
+        return val
+    
+    @staticmethod
+    def rastrigin(evolution, point, param = 10):
+        val = 0
+        for i in range(1, evolution.D):
+            val += point[i - 1] * point[i - 1] - param * math.cos(2 * math.pi * point[i - 1])
+        return val
 
 
 class Selects:

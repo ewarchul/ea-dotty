@@ -178,7 +178,6 @@ class Evolution:
         ax2.plot(index * self.N, df.dist_from_opt, color='r', label='centroid')
         ax2.axhline(y=np.linalg.norm(estimator_point - self.global_optimum), color='r', linestyle='dashed',
                     label='estimator')
-        # plt.legend()
         plt.legend(handles=[vc, ve, dc, de],
                    labels=['centroid value', 'estimator value', 'centroid dist_from_opt', 'estimator dist_from_opt'])
         plt.show()

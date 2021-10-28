@@ -58,7 +58,7 @@ class Mutations:
     @staticmethod
     def gaussian(evolution, point_with_fitness):
         point, fitness = point_with_fitness
-        noise = np.random.normal(loc=np.zeros(evolution.D), scale=evolution.variance, size=(evolution.D,))
+        noise = np.random.normal(loc=np.zeros(evolution.D), scale=evolution.initial_variance, size=(evolution.D,))
         return np.add(point, noise)
 
 

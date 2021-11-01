@@ -203,6 +203,7 @@ class Evolution:
         plt.scatter(x, y_estimator, marker='x', color='red', label='Estimator point')
         plt.xlabel('Population index')
         plt.ylabel('Point value')
+        plt.yscale("log")
         plt.legend()
         plt.title('Key points comparison across population history')
         if save is True:

@@ -1,43 +1,46 @@
-import os
-import sys
-sys.path.append('src/py')
-from Evolution import Evolution
-from utils import StopConditions, FitnessFunctions, Selects, Mutations, Estimators
+from tqdm import tqdm
+from src.py.Evolution import Evolution
+from src.py.utils import StopConditions, FitnessFunctions, Selects, Mutations, Estimators
 
-dimensions = [10,20,50,100]
-populationCountPerDimension = [2,4,8]
-means = [0,1]
+dimensions = [10, 20, 50]
+populationCounts = [50, 100, 300]
+means = [10]
 variances = [1.0]
-fitnessFunctions = [FitnessFunctions.eliptic, 
-                    FitnessFunctions.quadratic, 
-                    FitnessFunctions.rosenbrock, 
-                    FitnessFunctions.triangular, 
+fitnessFunctions = [FitnessFunctions.eliptic,
+                    FitnessFunctions.quadratic,
+                    FitnessFunctions.rosenbrock,
+                    FitnessFunctions.triangular,
                     FitnessFunctions.rastrigin
                     ]
 estimators = [Estimators.linear]
 
-for D in dimensions:
-  for Nx in populationCountPerDimension:
-    for initial_mean in means:
-      for initial_variance in variances:
-        for fitness_func in fitnessFunctions:
-          for estimaton_func in estimators:
-            params = {'D': D,
-                      'N': D * Nx,
-                      'maximization': False,
-                      'stop_func': StopConditions.count_generations,
-                      'max_generations': 15,
-                      'fitness_func': fitness_func,
-                      'select_func': Selects.threshold,
-                      'theta': 0.2,
-                      'mutation_func': Mutations.gaussian,
-                      'initial_mean': initial_mean,
-                      'initial_variance': initial_variance,
-                      'estimation_func': estimaton_func,
-                      'predict': 1.0,
-                      }
-            evolution = Evolution(params)
-            evolution.init_population()
-            evolution.plot_method_performance(evolution.H[0], save=True)
-            evolution.evaluate()
-            evolution.plot_estimator_performance(save=True)
+iterations_count = len(dimensions) * len(populationCounts) * len(means) * len(variances) * len(fitnessFunctions) * len(
+    estimators)
+
+with tqdm(total=iterations_count) as bar:
+    for D in dimensions:
+        for N in populationCounts:
+            for initial_mean in means:
+                for initial_variance in variances:
+                    for fitness_func in fitnessFunctions:
+                        for estimaton_func in estimators:
+                            params = {'D': D,
+                                      'N': N,
+                                      'maximization': False,
+                                      'stop_func': StopConditions.count_generations,
+                                      'max_generations': 400,
+                                      'fitness_func': fitness_func,
+                                      'select_func': Selects.threshold,
+                                      'theta': 0.2,
+                                      'mutation_func': Mutations.gaussian,
+                                      'initial_mean': initial_mean,
+                                      'initial_variance': initial_variance,
+                                      'estimation_func': estimaton_func,
+                                      'predict': 1.0,
+                                      }
+                            evolution = Evolution(params)
+                            evolution.init_population()
+                            evolution.evaluate()
+                            evolution.plot_estimator_performance(save=True)
+                            # evolution.save_log()
+                            bar.update(1)

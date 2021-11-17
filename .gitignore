@@ -145,6 +145,7 @@ ui-tests/test-results/
 .yarn
 .local
 .ipython
+ws/evolution
 .jupyter
 
 out/

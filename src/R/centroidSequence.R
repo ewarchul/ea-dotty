@@ -1,10 +1,12 @@
 library(dplyr)
+library(purrr)
 
 # fitness functions in "fitnessFunctions.R"
 
 getCentralPoint <- function(population) {
-  as_tibble(population) %>% summarise(across(all_of(names(.)), mean))
+  colMeans(population)
 }
+
 
 getEstimatorPoint <- function(population, fitness) {
   N = nrow(population)
@@ -17,13 +19,13 @@ getEstimatorPoint <- function(population, fitness) {
 }
 
 getSequence <- function(population, fitfunc) {
-  populationSorted = as_tibble(population) %>% mutate(f = fitfunc(.)$V1) %>% arrange(desc(f)) %>% select(-last_col())
-  sequence = getCentralPoint(populationSorted)
-  populationSorted = populationSorted[-1, ]
-  while(nrow(populationSorted) > 0) {
-    centralPoint = populationSorted %>% summarise(across(all_of(names(.)), mean))
-    sequence = rbind(sequence, centralPoint)
-    populationSorted = populationSorted[-1, ]
-  }
-  sequence
+  P <- population  %>% rowwise() %>% mutate(f = fitfunc(c_across()))
+  P <- P[order(P$f), ]
+  P <- select(P, -f)
+  reduce(as.data.frame(t(P)), function(cum, x){
+    tmp_population <- rbind(cum[[1]], x)
+    central_point <- getCentralPoint(tmp_population)
+    tmp_estimators <- rbind(cum[[2]], central_point)
+    list(tmp_population, tmp_estimators)
+  }, .init=list(data.frame(), data.frame()))[[2]]
 }

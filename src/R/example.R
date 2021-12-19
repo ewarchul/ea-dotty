@@ -1,4 +1,3 @@
-rm(list=ls())
 source("fitnessFunctions.R")
 source("de_rand_1_bin.R")
 

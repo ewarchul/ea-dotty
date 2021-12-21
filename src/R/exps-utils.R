@@ -32,3 +32,7 @@ extract_data = function(results) {
     }) %>%
     purrr::reduce(dplyr::bind_rows)
 }
+
+
+
+

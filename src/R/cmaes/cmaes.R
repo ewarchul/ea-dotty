@@ -61,7 +61,7 @@ cma_es <- function(par, fn, ..., lower, upper, if_CMA = TRUE, control=list()) {
   ## Parameters:
   trace       <- controlParam("trace", FALSE)
   fnscale     <- controlParam("fnscale", 1)
-  stopfitness <- controlParam("stopfitness", -Inf)
+  stopfitness <- controlParam("stopfitness", 10^-12)
   maxiter     <- controlParam("maxit", 1000)
   sigma       <- controlParam("sigma", 1)
   sc_tolx     <- controlParam("stop.tolx", 1e-12 * sigma) ## Undocumented stop criterion

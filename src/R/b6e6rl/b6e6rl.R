@@ -22,7 +22,7 @@ b6e6rl <- function(fitness, a, b, N, my_eps, max_evals, n0, delta){
     P <- matrix(0,N,d+1)
     for (i in 1:N){
         P[i,1:d] <- a+(b-a)*runif(d)
-        P[i,d+1] <- fitness(list(P[i,1:d])[[1]])
+        P[i,d+1] <- fitness(t(P[i,1:d]))
     }#0-th generation initialized
     fmax <- max(P[,d+1])
     fmax <- max(P[,d+1])
@@ -39,8 +39,8 @@ b6e6rl <- function(fitness, a, b, N, my_eps, max_evals, n0, delta){
     ii = 1
     while ((fmax-fmin > my_eps) && (func_evals < d*max_evals)){	#main loop
         for (i in 1:N){
-            hh <- roulete(ni)[1]		#select hh-th set of parameters
-            p_min <- roulete(ni)[2]
+            hh <- roulete(ni)[[1]]		#select hh-th set of parameters
+            p_min <- roulete(ni)[[2]]
             if (p_min < delta){
                 cni <- cni + ni - n0
                 ni <- rep(0,h) + n0
@@ -108,10 +108,14 @@ b6e6rl <- function(fitness, a, b, N, my_eps, max_evals, n0, delta){
                     y <- derandexp_RL(P,F,CR,i)
                 }
             )
+#             print(i)
+#             print(P)
+#             print(toString(hh))
+            print(y)
             y <- zrcad(y,a,b)
-            fy <- fitness(y)
+            fy <- fitness(t(y))
             func_evals <- func_evals+1
-            if (fy < P[i,d+1]){#trial point y is good for renewing population
+            if (!is.na(fy) && fy < P[i,d+1]){#trial point y is good for renewing population
                 Q[i,] <- c(y,fy)
                 success <- success+1
                 hh <- as.integer(hh)
@@ -119,6 +123,7 @@ b6e6rl <- function(fitness, a, b, N, my_eps, max_evals, n0, delta){
             }
         }#end of generation
         P <- Q
+        print(P)
         fmax <- max(P[,d+1])
         fmin <- min(P[,d+1])
         indmin <- which.min(P[,d+1])

@@ -22,7 +22,7 @@ getSequence <- function(population, fitfunc) {
   P <- population  %>% rowwise() %>% mutate(f = fitfunc(c_across()))
   P <- P[order(P$f), ]
   P <- select(P, -f)
-  reduce(as.data.frame(t(P)), function(cum, x){
+  reduce(as.data.frame(P), function(cum, x){
     tmp_population <- rbind(cum[[1]], x)
     central_point <- getCentralPoint(tmp_population)
     tmp_estimators <- rbind(cum[[2]], central_point)

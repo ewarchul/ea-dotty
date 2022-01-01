@@ -1,4 +1,5 @@
 derandexp_RL <- function(P,F,CR,expt){
+# print(c(F,CR,expt))
     N <- length(P[,1])
     d <- length(P[1,])-1
     y <- P[expt[1],1:d]
@@ -24,5 +25,5 @@ derandexp_RL <- function(P,F,CR,expt){
     }
 
     y[change]=v[change]
-    return(y)
+    y
 }

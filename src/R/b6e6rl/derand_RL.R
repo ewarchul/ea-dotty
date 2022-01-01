@@ -1,4 +1,5 @@
 derand_RL <- function(P,F,CR,expt){
+# print(c(F,CR,expt))
     N <- length(P[,1])
     d <- length(P[1,])-1
     y <- P[expt[1],1:d]
@@ -15,5 +16,5 @@ derand_RL <- function(P,F,CR,expt){
     if (is.empty(change))
         change <- 1+trunc(d*runif(1))
     y[change]=v[change]
-    return(y)
+    y
 }

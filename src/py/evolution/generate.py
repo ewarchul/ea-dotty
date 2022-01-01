@@ -1,6 +1,6 @@
 from tqdm import tqdm
-from src.py.Evolution import Evolution
-from src.py.utils import StopConditions, FitnessFunctions, Selects, Mutations, Estimators
+from evolution.Evolution import Evolution
+from evolution.utils import StopConditions, FitnessFunctions, Selects, Mutations, Estimators
 
 dimensions = [10, 20, 50]
 populationCounts = [50, 100, 300]

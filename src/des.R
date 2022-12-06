@@ -145,6 +145,7 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   log.bestVal <- controlParam("diag.bestVal", log.all)
   log.worstVal <- controlParam("diag.worstVal", log.all)
   log.eigen <- controlParam("diag.eigen", log.all)
+  log.truncMean <- controlParam("diag.truncMean", log.all)
 
   ## nonLamarckian approach allows individuals to violate boundaries.
   ## Fitness value is estimeted by fitness of repaired individual.
@@ -191,6 +192,9 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   if (log.eigen) {
     eigen.log <- matrix(0, nrow = 0, ncol = N)
   }
+  if (log.truncMean) {
+    truncMean.log <- matrix(0, nrow = 0, ncol = 1)
+  }
 
   ## Allocate buffers:
   dMean <- array(0, dim = c(N, histSize))
@@ -214,7 +218,7 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
     history <- list() ## List stores best 'mu'(variable) individuals for 'hsize' recent iterations
     Ft <- initFt
 
-    # Create fisrt population
+    # Create first population
     population <- replicate(lambda, runif(N, 0.8 * lower, 0.8 * upper))
 
     cumMean <- (upper + lower) / 2
@@ -230,6 +234,14 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
     fitness <- fn_l(population)
     oldMean <- numeric(N)
     newMean <- par
+    
+    sort_indx = order(fitness)
+    p_values = population*NaN;
+    for(i in 2:length(population)){
+      p_values[i] = t.test(population[sort_indx[1:i]])$p.value
+    }
+    truncMean <- mean(population[sort_indx[1:which.min(p_values)]])
+        
     limit <- 0
     worst.fit <- max(fitness)
 
@@ -264,7 +276,16 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
       if (log.bestVal) bestVal.log <- rbind(bestVal.log, min(suppressWarnings(min(bestVal.log)), min(fitness)))
       if (log.worstVal) worstVal.log <- rbind(worstVal.log, max(suppressWarnings(max(worstVal.log)), max(fitness)))
       if (log.eigen) eigen.log <- rbind(eigen.log, rev(sort(eigen(cov(t(population)))$values)))
-
+      if (log.truncMean) truncMean.log <- rbind(truncMean.log, fn_l(bounceBackBoundary2(truncMean)))
+      
+      # Truncated midpoint estimator
+      sort_indx = order(fitness)
+      p_values = population*NaN;
+      for(i in 2:length(population)){
+        p_values[i] = t.test(population[sort_indx[1:i]])$p.value
+      }
+      truncMean <- mean(population[sort_indx[1:which.min(p_values)]])
+      
       ## Select best 'mu' individuals of popu-lation
       selection <- order(fitness)[1:mu]
       selectedPoints <- population[, selection]
@@ -391,6 +412,7 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   if (log.bestVal) log$bestVal <- bestVal.log
   if (log.worstVal) log$worstVal <- worstVal.log
   if (log.eigen) log$eigen <- eigen.log
+  if (log.truncMean) log$truncMean <- truncMean.log
 
   names(best.fit) <- NULL
   res <- list(

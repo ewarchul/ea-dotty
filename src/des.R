@@ -412,7 +412,7 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   if (log.bestVal) log$bestVal <- bestVal.log
   if (log.worstVal) log$worstVal <- worstVal.log
   if (log.eigen) log$eigen <- eigen.log
-  if (log.truncMean) log$truncMean <- truncMean.log
+  if (log.truncMean) log$truncMean <- truncMean.log[1:iter]
 
   names(best.fit) <- NULL
   res <- list(

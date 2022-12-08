@@ -149,6 +149,8 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   log.truncMeanCord <- controlParam("diag.truncMeanCord", log.all)
   log.truncK <- controlParam("diag.truncK", log.all)
   log.best <- controlParam("diag.best", log.all)
+  log.weightTruncMean <- controlParam("diag.wtm", log.all)
+  log.stdmean <- controlParam("diag.stdmean", log.all)
 
   ## nonLamarckian approach allows individuals to violate boundaries.
   ## Fitness value is estimeted by fitness of repaired individual.
@@ -207,6 +209,12 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   if (log.best) {
     best.log <- matrix(0, nrow = 0, ncol = 1)
   }
+  if (log.weightTruncMean) {
+    wtm.log <- matrix(0, nrow = 0, ncol = 1)
+  }
+  if (log.stdmean) {
+    stdmean.log <- matrix(0, nrow = 0, ncol = 1)
+  }
 
   ## Allocate buffers:
   dMean <- array(0, dim = c(N, histSize))
@@ -248,17 +256,32 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
     newMean <- par
     
     sort_indx = order(fitness)
-    p_values = rep(NaN, lambda)
-    for(i in 2:lambda){
-      pop = population[, sort_indx[1:i]]
-      obj <- try(t.test(pop), silent=TRUE)
-      if(is(obj, 'try-error')) {
-        p_values[i] = ifelse(length(unique(deleteInfsNaNs(pop))) > 1, 0, NaN)
-      } else {
-        p_values[i] = obj$p.value
+    p_values = matrix(NaN, nrow=N, ncol=lambda)
+    k = rep(NaN, N)
+    truncMean = rep(NaN, N)
+    tweights = matrix(NaN, nrow=N, ncol=1)
+    weightedTruncMean = rep(NaN, N)
+    for(d in 1:N) {
+      for(i in 2:lambda){
+        pop = population[, sort_indx[1:i]] # p<0.005
+        obj <- try(t.test(pop[d,]), silent=TRUE)
+        if(is(obj, 'try-error')) {
+          p_values[d,i] = ifelse(length(unique(deleteInfsNaNs(pop))) > 1, 0, NaN)
+        } else {
+          p_values[d,i] = obj$p.value
+        }
       }
+      k[d] <- which.min(p_values[d,])
+      
+      truncSelectedPoints = population[, sort_indx[1:k[d]]]
+      truncMean[d] = apply(population[, sort_indx[1:k[d]]], 1, mean)[d]
+      tweights <- (log(k[d] + 1) - log(1:k[d]))
+      tweights <- tweights / sum(tweights)
+      weightedTruncMean[d] <- drop(truncSelectedPoints %*% tweights)[d]
     }
-    k <- which.min(p_values)
+    # mamy rozne K dla kazdego wymiaru, nalezy dla kazdego wymiaru usrednic wartosc danej cechy wzgledem cech k[d] najlepszych punkt�w
+    
+    stdmean <- apply(population[, sort_indx[1:mu]],1,mean)
     truncMean <- apply(population[, sort_indx[1:k]], 1, mean)
     best <- fn_l(bounceBackBoundary2(population[, sort_indx[lambda]]))
 
@@ -300,22 +323,45 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
       if (log.truncMeanCord) truncMeanCord.log <- rbind(truncMeanCord.log, truncMean)
       if (log.truncK) truncK.log <- rbind(truncK.log, k)
       if (log.best) best.log <- rbind(best.log, best)
+      if (log.weightTruncMean) wtm.log <- rbind(wtm.log, fn_l(bounceBackBoundary2(weightedTruncMean)))
+      if (log.stdmean) stdmean.log <- rbind(stdmean.log, fn_l(bounceBackBoundary2(stdmean)))
       
       # Truncated midpoint estimator
+      
       sort_indx = order(fitness)
-      p_values = rep(NaN, lambda)
-      for(i in 2:lambda){
-        pop = population[, sort_indx[1:i]]
-        obj <- try(t.test(pop), silent=TRUE)
-        if(is(obj, 'try-error')) {
-          p_values[i] = ifelse(length(unique(deleteInfsNaNs(pop))) > 1, 0, NaN)
-        } else {
-          p_values[i] = obj$p.value
+      p_values = matrix(NaN, nrow=N, ncol=lambda)
+      k = rep(NaN, N)
+      truncMean = rep(NaN, N)
+      tweights = matrix(NaN, nrow=N, ncol=1)
+      weightedTruncMean = rep(NaN, N)
+      for(d in 1:N) {
+        for(i in 2:lambda){
+          # wyznaczamy k-populacje
+          pop = population[, sort_indx[1:i]]
+          # dla kazdego wymiaru wyznaczamy dla k-populacji porownujemy d-ty atrybut punktow i zapisujemy p-wartosci
+          obj <- try(t.test(pop[d,]), silent=TRUE)
+          if(is(obj, 'try-error')) {
+            p_values[d,i] = ifelse(length(unique(deleteInfsNaNs(pop))) > 1, 0, NaN)
+          } else {
+            p_values[d,i] = obj$p.value
+          }
         }
+        # najlepsze k jest wyznaczane dla kazdego wymiaru osobno
+        k[d] <- which.min(p_values[d,])
+        
+        # wybrane zostaja k-populacje dla kazdego wymiaru osobno
+        truncSelectedPoints = population[, sort_indx[1:k[d]]]
+        # z wybranej k-populacji dla d-tego wymiaru, wybierana jest wartosc srodkowa d-tego atrybutu punktu srodkowego
+        truncMean[d] = apply(population[, sort_indx[1:k[d]]], 1, mean)[d]
+        # wagi sa dobierane tak jak w normalnym DES'ie
+        tweights <- (log(k[d] + 1) - log(1:k[d]))
+        tweights <- tweights / sum(tweights)
+        # d-ty atrybut estymatora ma wartosc taka sama jak wazony punkt srodkowy dla k-populacji dla d-tego wymiaru
+        weightedTruncMean[d] <- drop(truncSelectedPoints %*% tweights)[d]
       }
-      k <- which.min(p_values)
-      truncSelectedPoints = population[, sort_indx[1:k]]
-      truncMean <- apply(truncSelectedPoints, 1, mean)
+      
+      stdmean <- apply(population[, sort_indx[1:mu]],1,mean)
+      truncMean <- apply(population[, sort_indx[1:k]], 1, mean)
       best <- fn_l(bounceBackBoundary2(population[, sort_indx[1]]))
       
       ## Select best 'mu' individuals of popu-lation
@@ -446,8 +492,10 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   if (log.eigen) log$eigen <- eigen.log
   if (log.truncMean) log$truncMean <- truncMean.log[1:iter]
   if (log.truncMeanCord) log$truncMeanCord <- truncMeanCord.log
-  if (log.truncK) log$truncK <- truncK.log[1:iter]
+  if (log.truncK) log$truncK <- truncK.log
   if (log.best) log$best <- best.log[1:iter]
+  if (log.weightTruncMean) log$wtm <- wtm.log[1:iter]
+  if (log.stdmean) log$stdmean <- stdmean.log[1:iter]
 
   names(best.fit) <- NULL
   res <- list(

@@ -204,7 +204,7 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
     truncMeanCord.log <- matrix(0, nrow = 0, ncol = N)
   }
   if (log.truncK) {
-    truncK.log <- matrix(0, nrow = 0, ncol = 1)
+    truncK.log <- matrix(0, nrow = 0, ncol = N)
   }
   if (log.best) {
     best.log <- matrix(0, nrow = 0, ncol = 1)

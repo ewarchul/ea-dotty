@@ -282,7 +282,6 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
     # mamy rozne K dla kazdego wymiaru, nalezy dla kazdego wymiaru usrednic wartosc danej cechy wzgledem cech k[d] najlepszych punkt�w
     
     stdmean <- apply(population[, sort_indx[1:mu]],1,mean)
-    truncMean <- apply(population[, sort_indx[1:k]], 1, mean)
     best <- fn_l(bounceBackBoundary2(population[, sort_indx[lambda]]))
 
     limit <- 0
@@ -361,7 +360,6 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
       }
       
       stdmean <- apply(population[, sort_indx[1:mu]],1,mean)
-      truncMean <- apply(population[, sort_indx[1:k]], 1, mean)
       best <- fn_l(bounceBackBoundary2(population[, sort_indx[1]]))
       
       ## Select best 'mu' individuals of popu-lation

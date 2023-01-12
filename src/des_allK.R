@@ -8,7 +8,7 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
       return(v)
     }
   }
-
+  
   sampleFromHistory <- function(history, historySample, lambda) {
     ret <- c()
     for (i in 1:lambda) {
@@ -16,13 +16,13 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
     }
     return(ret)
   }
-
+  
   deleteInfsNaNs <- function(x) {
     x[is.na(x)] <- .Machine$double.xmax
     x[is.infinite(x)] <- .Machine$double.xmax
     return(x)
   }
-
+  
   fn_ <- function(x) {
     if (all(x >= cbind(lower)) && all(x <= cbind(upper))) {
       counteval <<- counteval + 1
@@ -32,7 +32,7 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
       return(.Machine$double.xmax)
     }
   }
-
+  
   ## Fitness function wrapper for Lamarcian approach
   fn_l <- function(P) {
     if (is.matrix(P)) {
@@ -56,12 +56,12 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
       }
     }
   }
-
+  
   ## Fitness function wrapper for nonLamarckian approach
   fn_d <- function(P, P_repaired, fitness) {
     P <- deleteInfsNaNs(P)
     P_repaired <- deleteInfsNaNs(P_repaired)
-
+    
     if (is.matrix(P) && is.matrix(P_repaired)) {
       repairedInd <- apply(P != P_repaired, 2, all)
       P_fit <- fitness
@@ -78,7 +78,7 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
       return(P_fit)
     }
   }
-
+  
   bounceBackBoundary2 <- function(x) {
     if (all(x >= cbind(lower)) && all(x <= cbind(upper))) {
       return(x)
@@ -94,15 +94,15 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
     x <- deleteInfsNaNs(x)
     return(bounceBackBoundary2(x))
   }
-
+  
   N <- length(par) ## Number of dimensions
-
+  
   if (missing(lower)) {
     lower <- rep(-100, N)
   } else if (length(lower) == 1) {
     lower <- rep(lower, N)
   }
-
+  
   if (missing(upper)) {
     upper <- rep(100, N)
   } else if (length(upper) == 1) {
@@ -135,7 +135,7 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   tol         <- controlParam("tol", 10^-12)
   counteval   <- 0 ## Number of function evaluations
   sqrt_N      <- sqrt(N)
-
+  
   log.all <- controlParam("diag", FALSE)
   log.Ft <- controlParam("diag.Ft", log.all)
   log.value <- controlParam("diag.value", log.all)
@@ -147,7 +147,6 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   log.eigen <- controlParam("diag.eigen", log.all)
   log.truncMean <- controlParam("diag.truncMean", log.all)
   log.truncMeanCord <- controlParam("diag.truncMeanCord", log.all)
-  log.truncK <- controlParam("diag.truncK", log.all)
   log.best <- controlParam("diag.best", log.all)
   log.weightTruncMean <- controlParam("diag.wtm", log.all)
   log.stdmean <- controlParam("diag.stdmean", log.all)
@@ -155,15 +154,15 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   ## nonLamarckian approach allows individuals to violate boundaries.
   ## Fitness value is estimeted by fitness of repaired individual.
   Lamarckism <- controlParam("Lamarckism", FALSE)
-
+  
   ## Fitness function wrapper
-
+  
   ## Asserts - safety checks:
   stopifnot(length(upper) == N)
   stopifnot(length(lower) == N)
   stopifnot(all(lower < upper))
   stopifnot(length(Ft) == 1)
-
+  
   ## Initialize variables:
   best.fit <- Inf ## The best fitness found so far
   best.par <- NULL ## The best solution found so far
@@ -171,7 +170,7 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   last.restart <- 0
   restart.length <- 0
   restart.number <- 0
-
+  
   ## According to user specification, preallocate logging structures:
   if (log.Ft) {
     Ft.log <- matrix(0, nrow = 0, ncol = 1)
@@ -198,19 +197,16 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
     eigen.log <- matrix(0, nrow = 0, ncol = N)
   }
   if (log.truncMean) {
-    truncMean.log <- matrix(0, nrow = 0, ncol = 1)
+    truncMean.log <- matrix(0, nrow = 0, ncol = lambda)
   }
   if (log.truncMeanCord) {
     truncMeanCord.log <- matrix(0, nrow = 0, ncol = N)
-  }
-  if (log.truncK) {
-    truncK.log <- matrix(0, nrow = 0, ncol = N)
   }
   if (log.best) {
     best.log <- matrix(0, nrow = 0, ncol = 1)
   }
   if (log.weightTruncMean) {
-    wtm.log <- matrix(0, nrow = 0, ncol = 1)
+    wtm.log <- matrix(0, nrow = 0, ncol = lambda)
   }
   if (log.stdmean) {
     stdmean.log <- matrix(0, nrow = 0, ncol = 1)
@@ -220,35 +216,36 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   dMean <- array(0, dim = c(N, histSize))
   FtHistory <- array(0, histSize) ## Array buffer containing 'histSize' last values of 'Ft'
   pc <- array(0, dim = c(N, histSize))
-
+  
   ## Initialize internal strategy parameters
   msg <- NULL ## Reason for terminating
   restart.number <- -1
-
+  
   while (counteval < budget) {
+    
     restart.number <- restart.number + 1
     mu <- floor(lambda / 2)
     weights <- log(mu + 1) - log(1:mu)
     weights <- weights / sum(weights)
     weightsPop <- log(lambda + 1) - log(1:lambda)
     weightsPop <- weightsPop / sum(weightsPop)
-
+    
     histHead <- 0 ## Pointer to the history buffer head
     iter <- 0L ## Number of iterations
     history <- list() ## List stores best 'mu'(variable) individuals for 'hsize' recent iterations
     Ft <- initFt
-
+    
     # Create first population
     population <- replicate(lambda, runif(N, 0.8 * lower, 0.8 * upper))
-
+    
     cumMean <- (upper + lower) / 2
-
+    
     populationRepaired <- apply(population, 2, bounceBackBoundary2)
-
+    
     if (Lamarckism == TRUE) {
       population <- populationRepaired
     }
-
+    
     selection <- rep(0, mu)
     selectedPoints <- matrix(0, nrow = N, ncol = mu)
     fitness <- fn_l(population)
@@ -256,60 +253,54 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
     newMean <- par
     
     sort_indx = order(fitness)
-    p_values = matrix(NaN, nrow=N, ncol=lambda)
-    k = rep(NaN, N)
-    truncMean = rep(NaN, N)
+    truncMean = matrix(NaN, nrow=N, ncol=lambda)
+    weightedTruncMean = matrix(NaN, nrow=N, ncol=lambda)
     tweights = matrix(NaN, nrow=N, ncol=1)
-    weightedTruncMean = rep(NaN, N)
-    for(d in 1:N) {
-      for(i in 2:lambda){
-        pop = population[, sort_indx[1:i]] # p<0.005
-        obj <- try(t.test(pop[d,]), silent=TRUE)
-        if(is(obj, 'try-error')) {
-          p_values[d,i] = ifelse(length(unique(deleteInfsNaNs(pop))) > 1, 0, NaN)
-        } else {
-          p_values[d,i] = obj$p.value
-        }
-      }
-      k[d] <- which.min(p_values[d,])
-      
-      truncSelectedPoints = population[, sort_indx[1:k[d]]]
-      truncMean[d] = apply(population[, sort_indx[1:k[d]]], 1, mean)[d]
-      tweights <- (log(k[d] + 1) - log(1:k[d]))
+    for(k in 2:lambda){
+      truncSelectedPoints = population[, sort_indx[1:k]]
+      truncMean[,k] = apply(population[, sort_indx[1:k]], 1, mean)
+      tweights <- (log(k + 1) - log(1:k))
       tweights <- tweights / sum(tweights)
-      weightedTruncMean[d] <- drop(truncSelectedPoints %*% tweights)[d]
+      weightedTruncMean[,k] <- drop(truncSelectedPoints %*% tweights)
     }
-    # mamy rozne K dla kazdego wymiaru, nalezy dla kazdego wymiaru usrednic wartosc danej cechy wzgledem cech k[d] najlepszych punkt�w
     
     stdmean <- apply(population[, sort_indx[1:mu]],1,mean)
     best <- fn_l(bounceBackBoundary2(population[, sort_indx[lambda]]))
 
     limit <- 0
     worst.fit <- max(fitness)
-
+    
     # Store population and selection means
     popMean <- drop(population %*% weightsPop)
     muMean <- newMean
-
+    
     ## Matrices for creating diffs
     diffs <- matrix(0, N, lambda)
     x1sample <- numeric(lambda)
     x2sample <- numeric(lambda)
-
+    
     chiN <- sqrt(N)
-
+    
     histNorm <- 1 / sqrt(2)
     counterRepaired <- 0
-
+    
     stoptol <- F
     while (counteval < budget && !stoptol) {
       iter <- iter + 1L
       histHead <- (histHead %% histSize) + 1
-
+      
       mu <- floor(lambda / 2)
       weights <- log(mu + 1) - log(1:mu)
       weights <- weights / sum(weights)
-
+      
+      # for logging purposes
+      weightTruncMeanFitness <- matrix(0, nrow=1, ncol=lambda)
+      truncMeanFitness <- matrix(0, nrow=1, ncol=lambda)
+      for (k in 2:lambda){
+        weightTruncMeanFitness[,k] <- fn_l(bounceBackBoundary2(weightedTruncMean[,k]))
+        truncMeanFitness[,k] <- fn_l(bounceBackBoundary2(truncMean[,k]))
+      }
+      
       if (log.Ft) Ft.log <- rbind(Ft.log, Ft)
       if (log.value) value.log <- rbind(value.log, fitness)
       if (log.mean) mean.log <- rbind(mean.log, fn_l(bounceBackBoundary2(newMean)))
@@ -318,126 +309,125 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
       if (log.bestVal) bestVal.log <- rbind(bestVal.log, min(suppressWarnings(min(bestVal.log)), min(fitness)))
       if (log.worstVal) worstVal.log <- rbind(worstVal.log, max(suppressWarnings(max(worstVal.log)), max(fitness)))
       if (log.eigen) eigen.log <- rbind(eigen.log, rev(sort(eigen(cov(t(population)))$values)))
-      if (log.truncMean) truncMean.log <- rbind(truncMean.log, fn_l(bounceBackBoundary2(truncMean)))
-      if (log.truncMeanCord) truncMeanCord.log <- rbind(truncMeanCord.log, truncMean)
-      if (log.truncK) truncK.log <- rbind(truncK.log, k)
+      if (log.truncMean) truncMean.log <- rbind(truncMean.log, truncMeanFitness)
+      if (log.truncMeanCord) truncMeanCord.log <- rbind(truncMeanCord.log, 0)
       if (log.best) best.log <- rbind(best.log, best)
-      if (log.weightTruncMean) wtm.log <- rbind(wtm.log, fn_l(bounceBackBoundary2(weightedTruncMean)))
+      if (log.weightTruncMean) wtm.log <- rbind(wtm.log, weightTruncMeanFitness)
       if (log.stdmean) stdmean.log <- rbind(stdmean.log, fn_l(bounceBackBoundary2(stdmean)))
       
       # Truncated midpoint estimator
-      
       sort_indx = order(fitness)
-      p_values = matrix(NaN, nrow=N, ncol=lambda)
-      k = rep(NaN, N)
-      truncMean = rep(NaN, N)
+      truncMean = matrix(NaN, nrow=N, ncol=lambda)
       tweights = matrix(NaN, nrow=N, ncol=1)
-      weightedTruncMean = rep(NaN, N)
-      for(d in 1:N) {
-        for(i in 2:lambda){
-          # wyznaczamy k-populacje
-          pop = population[, sort_indx[1:i]]
-          # dla kazdego wymiaru wyznaczamy dla k-populacji porownujemy d-ty atrybut punktow i zapisujemy p-wartosci
-          obj <- try(t.test(pop[d,]), silent=TRUE)
-          if(is(obj, 'try-error')) {
-            p_values[d,i] = ifelse(length(unique(deleteInfsNaNs(pop))) > 1, 0, NaN)
-          } else {
-            p_values[d,i] = obj$p.value
-          }
-        }
-        # najlepsze k jest wyznaczane dla kazdego wymiaru osobno
-        k[d] <- which.min(p_values[d,])
-        
-        # wybrane zostaja k-populacje dla kazdego wymiaru osobno
-        truncSelectedPoints = population[, sort_indx[1:k[d]]]
-        # z wybranej k-populacji dla d-tego wymiaru, wybierana jest wartosc srodkowa d-tego atrybutu punktu srodkowego
-        truncMean[d] = apply(population[, sort_indx[1:k[d]]], 1, mean)[d]
-        # wagi sa dobierane tak jak w normalnym DES'ie
-        tweights <- (log(k[d] + 1) - log(1:k[d]))
+      weightedTruncMean = matrix(NaN, nrow=N, ncol=lambda)
+      for(k in 2:lambda){
+        truncSelectedPoints = population[, sort_indx[1:k]]
+        truncMean[, k] <- apply(population[, sort_indx[1:k]], 1, mean)
+        tweights <- (log(k + 1) - log(1:k))
         tweights <- tweights / sum(tweights)
-        # d-ty atrybut estymatora ma wartosc taka sama jak wazony punkt srodkowy dla k-populacji dla d-tego wymiaru
-        weightedTruncMean[d] <- drop(truncSelectedPoints %*% tweights)[d]
+        weightedTruncMean[, k] <- drop(truncSelectedPoints %*% tweights)
       }
       
       stdmean <- apply(population[, sort_indx[1:mu]],1,mean)
       best <- fn_l(bounceBackBoundary2(population[, sort_indx[1]]))
+
+      # sort_indx = order(fitness)
+      # p_values = rep(NaN, lambda)
+      # for(i in 2:lambda){
+      #   pop = population[, sort_indx[1:i]]
+      #   obj <- try(t.test(pop), silent=TRUE)
+      #   if(is(obj, 'try-error')) {
+      #     p_values[i] = ifelse(length(unique(deleteInfsNaNs(pop))) > 1, 0, NaN)
+      #   } else {
+      #     p_values[i] = obj$p.value
+      #   }
+      # }
+      # k <- which.min(p_values)
+      # truncSelectedPoints = population[, sort_indx[1:k]]
+      # truncMean <- apply(truncSelectedPoints, 1, mean)
+      # stdmean <- apply(population[, sort_indx[1:mu]],1,mean)
+      # 
+      # tweights <- log(k + 1) - log(1:k)
+      # tweights <- tweights / sum(tweights)
+      # weightedTruncMean <- drop(truncSelectedPoints %*% tweights)
+      # best <- fn_l(bounceBackBoundary2(population[, sort_indx[1]]))
       
       ## Select best 'mu' individuals of popu-lation
       selection <- order(fitness)[1:mu]
       selectedPoints <- population[, selection]
-
+      
       # Save selected population in the history buffer
       history[[histHead]] <- array(0, dim = c(N, mu))
       history[[histHead]] <- selectedPoints * histNorm / Ft
-
+      
       ## Calculate weighted mean of selected points
       oldMean <- newMean
       newMean <- drop(selectedPoints %*% weights)
-
+      
       ## Write to buffers
       muMean <- newMean
       dMean[, histHead] <- (muMean - popMean) / Ft
-
+      
       step <- (newMean - oldMean) / Ft
-
+      
       ## Update Ft
       FtHistory[histHead] <- Ft
       oldFt <- Ft
-
+      
       ## Update parameters
       if (histHead == 1) {
         pc[, histHead] <- (1 - cp) * rep(0.0, N) / sqrt(N) + sqrt(mu * cp * (2 - cp)) * step
       } else {
         pc[, histHead] <- (1 - cp) * pc[, histHead - 1] + sqrt(mu * cp * (2 - cp)) * step
       }
-
+      
       ## Sample from history with uniform distribution
       limit <- ifelse(iter < histSize, histHead, histSize)
       historySample <- sample(1:limit, lambda, T)
       historySample2 <- sample(1:limit, lambda, T)
-
+      
       x1sample <- sampleFromHistory(history, historySample, lambda)
       x2sample <- sampleFromHistory(history, historySample, lambda)
-
+      
       ## Make diffs
       for (i in 1:lambda) {
         x1 <- history[[historySample[i]]][, x1sample[i]]
         x2 <- history[[historySample[i]]][, x2sample[i]]
-
+        
         diffs[, i] <- sqrt(cc) * ((x1 - x2) + rnorm(1) * dMean[, historySample[i]]) + sqrt(1 - cc) * rnorm(1) * pc[, historySample2[i]]
       }
-
+      
       ## New population
       population <- newMean + Ft * diffs + tol * (1 - 2 / N^2)^(iter / 2) * rnorm(diffs) / chiN
       population <- deleteInfsNaNs(population)
-
+      
       # Check constraints violations
       # Repair the individual if necessary
       populationTemp <- population
       populationRepaired <- apply(population, 2, bounceBackBoundary2)
-
+      
       counterRepaired <- 0
       for (tt in 1:ncol(populationTemp)) {
         if (any(populationTemp[, tt] != populationRepaired[, tt])) {
           counterRepaired <- counterRepaired + 1
         }
       }
-
+      
       if (Lamarckism == TRUE) {
         population <- populationRepaired
       }
-
+      
       popMean <- drop(population %*% weightsPop)
-
+      
       ## Evaluation
       fitness <- fn_l(population)
       if (Lamarckism == FALSE) {
         fitnessNonLamarcian <- fn_d(population, populationRepaired, fitness)
       }
-
+      
       ## Break if fit :
       wb <- which.min(fitness)
-
+      
       if (fitness[wb] < best.fit) {
         best.fit <- fitness[wb]
         if (Lamarckism == TRUE) {
@@ -446,40 +436,40 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
           best.par <- populationRepaired[, wb]
         }
       }
-
+      
       ## Check worst fit:
       ww <- which.max(fitness)
       if (fitness[ww] > worst.fit) {
         worst.fit <- fitness[ww]
       }
-
+      
       ## Fitness with penalty for nonLamarcian approach
       if (Lamarckism == FALSE) {
         fitness <- fitnessNonLamarcian
       }
-
+      
       ## Check if the middle point is the best found so far
       cumMean <- 0.8 * cumMean + 0.2 * newMean
       cumMeanRepaired <- bounceBackBoundary2(cumMean)
-
+      
       fn_cum <- fn_l(cumMeanRepaired)
-
+      
       if (fn_cum < best.fit) {
         best.fit <- drop(fn_cum)
         best.par <- cumMeanRepaired
       }
-
+      
       if (fitness[1] <= stopfitness) {
         msg <- "Stop fitness reached."
         break
       }
     }
   }
-
+  
   cnt <- c(`function` = as.integer(counteval))
-
+  
   log <- list()
-
+  
   if (log.Ft) log$Ft <- Ft.log
   if (log.value) log$value <- value.log[1:iter, ]
   if (log.mean) log$mean <- mean.log[1:iter]
@@ -488,11 +478,10 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
   if (log.bestVal) log$bestVal <- bestVal.log
   if (log.worstVal) log$worstVal <- worstVal.log
   if (log.eigen) log$eigen <- eigen.log
-  if (log.truncMean) log$truncMean <- truncMean.log[1:iter]
+  if (log.truncMean) log$truncMean <- truncMean.log
   if (log.truncMeanCord) log$truncMeanCord <- truncMeanCord.log
-  if (log.truncK) log$truncK <- truncK.log
   if (log.best) log$best <- best.log[1:iter]
-  if (log.weightTruncMean) log$wtm <- wtm.log[1:iter]
+  if (log.weightTruncMean) log$wtm <- wtm.log
   if (log.stdmean) log$stdmean <- stdmean.log[1:iter]
 
   names(best.fit) <- NULL
@@ -506,6 +495,6 @@ des_classic <- function(par, fn, ..., lower, upper, control = list()) {
     diagnostic = log
   )
   class(res) <- "des.result"
-
+  
   return(res)
 }
